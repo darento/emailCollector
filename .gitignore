@@ -9,4 +9,9 @@ dist/
 *.egg-info/
 
 # Backup files
-*~
+*~my_tickets 
+
+# my tickets and other files
+my_tickets/
+downloads/
+test.app
