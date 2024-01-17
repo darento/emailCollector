@@ -1,11 +1,38 @@
 import PyPDF2
 import re
+import logging
 
 
 class TicketParser:
+    # Create a logger at the class level
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.WARNING)
+
+    # Check if the logger has handlers
+    if not logger.handlers:
+        # Create a console handler with level DEBUG
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.WARNING)
+
+        # Create a formatter and add it to the handler
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        handler.setFormatter(formatter)
+
+        # Add the handler to the logger
+        logger.addHandler(handler)
+
     def __init__(self, file_path: str, file_format: str) -> None:
         self.file_path = file_path
         self.file_format = file_format
+        self.file_date = self._extract_date_from_file_path()
+
+    def _extract_date_from_file_path(self) -> str:
+        # Extract the date from the file name
+        # The date is the first 8 characters of the file name
+        # The format is YYYYMMDD
+        return self.file_path.split("/")[-1][:8]
 
     def open_pdf(self):
         self.pdf_file_obj = open(self.file_path, "rb")
@@ -21,27 +48,64 @@ class TicketParser:
 
     def extract_items_mercadona(self):
         self.items = []
-        start = self.text.find("Descripción")
+
+        # Find the start and end of the items
+        # Use the text "Descripció" (CAT) and "TOTAL"
+        start = self.text.find("Descripció")
         end = self.text.find("TOTAL")
         items_text = self.text[start:end]
-        lines = items_text.split("\n")[1:]
-        for line in lines:
-            print(line)
-            # TODO: split the product name from the price and price per unit
-            # TODO: separte the num of units from the product name
-            item = {
-                "product": item_match.group(1),
-                "units": int(item_match.group(2)),
-                "price_per_unit": float(item_match.group(3).replace(",", ".")),
-            }
-            self.items.append(item)
-        print(self.items)
-        exit(0)
+        # remove first and last line (Descripción and empty line)
+        lines = items_text.split("\n")[1:-1]
+
+        self.logger.debug(f"TEXT: \n{self.text}")
+        self.logger.debug(f"LINES: \n{lines}")
+
+        # create iterator to check next line
+        lines_iter = iter(lines)
+        for line in lines_iter:
+            # Split the item line into 4 groups:
+            # 1. Units
+            # 2. Product
+            # 3. Price per unit
+            # 4. Total price
+            self.logger.debug(line)
+            match = re.match(r"(\d+)(.*?)(\d+,\d{2})\s*(\d+,\d{2})?", line.strip())
+            if match:
+                self.logger.debug(f"Match: {match.groups()}")
+                item = {
+                    "units": int(match.group(1)),
+                    "product": match.group(2).strip(),
+                    "price_per_unit": float(match.group(3).replace(",", "."))
+                    if match.group(3)
+                    else None,
+                    "total_price": float(match.group(4).replace(",", "."))
+                    if match.group(4)
+                    else float(match.group(3).replace(",", ".")),
+                }
+                self.items.append(item)
+
+            else:
+                # If the current line doesn't match, check the next line
+                next_line = next(lines_iter)
+                match = re.match(
+                    r"(\d+,\d{3}) kg (\d+,\d{2}) €/kg (\d+,\d{2})", next_line.strip()
+                )
+                self.logger.debug(f"No match: {match.groups()}")
+                if match:
+                    item = {
+                        "product": line[1:].strip(),
+                        "weight_kg": float(match.group(1).replace(",", ".")),
+                        "price_per_kg": float(match.group(2).replace(",", ".")),
+                        "total_price": float(match.group(3).replace(",", ".")),
+                    }
+                    self.items.append(item)
+            self.logger.debug(self.items)
+            self.logger.debug("-------------------")
 
     def calculate_total_price(self):
-        self.total_price = sum(
-            item["units"] * item["price_per_unit"] for item in self.items
-        )
+        self.total_price = sum(item["total_price"] for item in self.items)
+        if self.total_price == 0:
+            self.logger.warning("Total price is 0. Check the parser!")
 
     def parse(self):
         self.open_pdf()
@@ -51,3 +115,13 @@ class TicketParser:
         self.calculate_total_price()
         self.close_pdf()
         return self.items, self.total_price
+
+
+if __name__ == "__main__":
+    ticket_parser = TicketParser(
+        "../downloads/20240105 Mercadona 12,50 €.pdf", "mercadona"
+    )
+    items, total_price = ticket_parser.parse()
+    print(items)
+    print(f"Total price: {total_price:.2f} €")
+    print("Done!")

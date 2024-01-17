@@ -35,6 +35,9 @@ def main(yaml_conf: str) -> None:
         )
         ticket_parser = TicketParser(file_path, "mercadona")
         items, total_price = ticket_parser.parse()
+        # print(items)
+        print(f"Total price: {total_price:.2f} €")
+        print(f"File date: {ticket_parser.file_date}")
 
     print("Emails downloaded successfully!")
 
