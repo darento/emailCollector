@@ -3,6 +3,10 @@ import re
 import logging
 
 
+ITEM_PATTERN = re.compile(r"(\d+)(.*?)(\d+,\d{2})\s*(\d+,\d{2})?")
+WEIGHT_PATTERN = re.compile(r"(\d+,\d{3}) kg (\d+,\d{2}) €/kg (\d+,\d{2})")
+
+
 class TicketParser:
     # Create a logger at the class level
     logger = logging.getLogger(__name__)
@@ -46,30 +50,9 @@ class TicketParser:
     def extract_lines(self):
         self.lines = self.text.split("\n")
 
-    def extract_items_mercadona(self):
-        self.items = []
-
-        # Find the start and end of the items
-        # Use the text "Descripció" (CAT) and "TOTAL"
-        start = self.text.find("Descripció")
-        end = self.text.find("TOTAL")
-        items_text = self.text[start:end]
-        # remove first and last line (Descripción and empty line)
-        lines = items_text.split("\n")[1:-1]
-
-        self.logger.debug(f"TEXT: \n{self.text}")
-        self.logger.debug(f"LINES: \n{lines}")
-
-        # create iterator to check next line
-        lines_iter = iter(lines)
+    def parse_line(self, lines_iter):
         for line in lines_iter:
-            # Split the item line into 4 groups:
-            # 1. Units
-            # 2. Product
-            # 3. Price per unit
-            # 4. Total price
-            self.logger.debug(line)
-            match = re.match(r"(\d+)(.*?)(\d+,\d{2})\s*(\d+,\d{2})?", line.strip())
+            match = ITEM_PATTERN.match(line.strip())
             if match:
                 self.logger.debug(f"Match: {match.groups()}")
                 item = {
@@ -82,25 +65,39 @@ class TicketParser:
                     if match.group(4)
                     else float(match.group(3).replace(",", ".")),
                 }
-                self.items.append(item)
-
+                yield item
             else:
                 # If the current line doesn't match, check the next line
                 next_line = next(lines_iter)
-                match = re.match(
-                    r"(\d+,\d{3}) kg (\d+,\d{2}) €/kg (\d+,\d{2})", next_line.strip()
-                )
-                self.logger.debug(f"No match: {match.groups()}")
+                match = WEIGHT_PATTERN.match(next_line.strip())
                 if match:
+                    self.logger.debug(f"No match: {match.groups()}")
                     item = {
                         "product": line[1:].strip(),
                         "weight_kg": float(match.group(1).replace(",", ".")),
                         "price_per_kg": float(match.group(2).replace(",", ".")),
                         "total_price": float(match.group(3).replace(",", ".")),
                     }
-                    self.items.append(item)
-            self.logger.debug(self.items)
-            self.logger.debug("-------------------")
+                    yield item
+
+    def extract_items_mercadona(self):
+        self.items = []
+
+        # Find the start and end of the items
+        start = self.text.find("Descripció")
+        end = self.text.find("TOTAL")
+        items_text = self.text[start:end]
+
+        # remove first and last line (Descripción and empty line)
+        lines = items_text.split("\n")[1:-1]
+
+        self.logger.debug(f"TEXT: \n{self.text}")
+        self.logger.debug(f"LINES: \n{lines}")
+
+        # create iterator to check next line
+        lines_iter = iter(lines)
+        for item in self.parse_line(lines_iter):
+            self.items.append(item)
 
     def calculate_total_price(self):
         self.total_price = sum(item["total_price"] for item in self.items)
