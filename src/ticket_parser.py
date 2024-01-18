@@ -1,13 +1,14 @@
 import PyPDF2
 import re
 import logging
+from abc import ABC, abstractmethod
 
 
 ITEM_PATTERN = re.compile(r"(\d+)(.*?)(\d+,\d{2})\s*(\d+,\d{2})?")
 WEIGHT_PATTERN = re.compile(r"(\d+,\d{3}) kg (\d+,\d{2}) €/kg (\d+,\d{2})")
 
 
-class TicketParser:
+class AbstractTicketParser(ABC):
     # Create a logger at the class level
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.WARNING)
@@ -27,28 +28,51 @@ class TicketParser:
         # Add the handler to the logger
         logger.addHandler(handler)
 
-    def __init__(self, file_path: str, file_format: str) -> None:
+    def __init__(self, file_path: str) -> None:
         self.file_path = file_path
-        self.file_format = file_format
+        self.items = []
+        self.total_price = 0
         self.file_date = self._extract_date_from_file_path()
 
-    def _extract_date_from_file_path(self) -> str:
-        # Extract the date from the file name
-        # The date is the first 8 characters of the file name
-        # The format is YYYYMMDD
-        return self.file_path.split("/")[-1][:8]
-
-    def open_pdf(self):
+    def open_pdf(self) -> None:
         self.pdf_file_obj = open(self.file_path, "rb")
         self.pdf_reader = PyPDF2.PdfReader(self.pdf_file_obj)
         self.page_obj = self.pdf_reader.pages[0]
         self.text = self.page_obj.extract_text()
 
-    def close_pdf(self):
+    def close_pdf(self) -> None:
         self.pdf_file_obj.close()
 
-    def extract_lines(self):
+    def extract_lines(self) -> None:
         self.lines = self.text.split("\n")
+
+    def parse(self) -> tuple:
+        self.open_pdf()
+        self.extract_lines()
+        self.extract_items()
+        self.calculate_total_price()
+        self.close_pdf()
+        return self.items, self.total_price
+
+    @abstractmethod
+    def _extract_date_from_file_path(self) -> str:
+        pass
+
+    @abstractmethod
+    def extract_items(self) -> None:
+        pass
+
+    @abstractmethod
+    def calculate_total_price(self) -> None:
+        pass
+
+
+class MercadonaTicketParser(AbstractTicketParser):
+    def _extract_date_from_file_path(self) -> str:
+        # Extract the date from the file name
+        # The date is the first 8 characters of the file name
+        # The format is YYYYMMDD
+        return self.file_path.split("/")[-1][:8]
 
     def parse_line(self, lines_iter):
         for line in lines_iter:
@@ -80,9 +104,7 @@ class TicketParser:
                     }
                     yield item
 
-    def extract_items_mercadona(self):
-        self.items = []
-
+    def extract_items(self):
         # Find the start and end of the items
         start = self.text.find("Descripció")
         end = self.text.find("TOTAL")
@@ -104,21 +126,31 @@ class TicketParser:
         if self.total_price == 0:
             self.logger.warning("Total price is 0. Check the parser!")
 
-    def parse(self):
-        self.open_pdf()
-        self.extract_lines()
-        if self.file_format == "mercadona":
-            self.extract_items_mercadona()
-        self.calculate_total_price()
-        self.close_pdf()
-        return self.items, self.total_price
+
+class OtherVendorTicketParser(AbstractTicketParser):
+    def extract_items(self):
+        # Implement OtherVendor-specific parsing logic here
+        pass
+
+    def calculate_total_price(self):
+        # Implement OtherVendor-specific logic here
+        pass
+
+
+# factory function
+def get_ticket_parser(vendor, file_path):
+    if vendor == "Mercadona":
+        return MercadonaTicketParser(file_path)
+    elif vendor == "OtherVendor":
+        return OtherVendorTicketParser(file_path)
+    else:
+        raise ValueError(f"Unsupported vendor: {vendor}")
 
 
 if __name__ == "__main__":
-    ticket_parser = TicketParser(
-        "../downloads/20240105 Mercadona 12,50 €.pdf", "mercadona"
-    )
-    items, total_price = ticket_parser.parse()
+    file_path = "../downloads/20240105 Mercadona 12,50 €.pdf"
+    pdf_parser = get_ticket_parser("Mercadona", file_path)
+    items, total_price = pdf_parser.parse()
     print(items)
     print(f"Total price: {total_price:.2f} €")
     print("Done!")
