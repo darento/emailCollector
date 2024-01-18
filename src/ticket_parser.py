@@ -1,11 +1,17 @@
-import PyPDF2
+import os
+import pypdf
 import re
 import logging
 from abc import ABC, abstractmethod
+import pytesseract
 
 
 ITEM_PATTERN = re.compile(r"(\d+)(.*?)(\d+,\d{2})\s*(\d+,\d{2})?")
 WEIGHT_PATTERN = re.compile(r"(\d+,\d{3}) kg (\d+,\d{2}) €/kg (\d+,\d{2})")
+
+
+# TODO: Add a class for the OCR parser
+# TODO: Add a class for the PDF parser
 
 
 class AbstractTicketParser(ABC):
@@ -36,7 +42,7 @@ class AbstractTicketParser(ABC):
 
     def open_pdf(self) -> None:
         self.pdf_file_obj = open(self.file_path, "rb")
-        self.pdf_reader = PyPDF2.PdfReader(self.pdf_file_obj)
+        self.pdf_reader = pypdf.PdfReader(self.pdf_file_obj)
         self.page_obj = self.pdf_reader.pages[0]
         self.text = self.page_obj.extract_text()
 
@@ -53,6 +59,9 @@ class AbstractTicketParser(ABC):
         self.calculate_total_price()
         self.close_pdf()
         return self.items, self.total_price
+
+    def get_date(self) -> str:
+        return self.file_date
 
     @abstractmethod
     def _extract_date_from_file_path(self) -> str:
@@ -127,10 +136,15 @@ class MercadonaTicketParser(AbstractTicketParser):
             self.logger.warning("Total price is 0. Check the parser!")
 
 
-class OtherVendorTicketParser(AbstractTicketParser):
+class GranelTicketParser(AbstractTicketParser):
+    def _extract_date_from_file_path(self) -> str:
+        # Extract the date from the file name
+        # The date is the first 8 characters of the file name
+        # The format is YYYYMMDD
+        return self.file_path.split("/")[-1][:8]
+
     def extract_items(self):
-        # Implement OtherVendor-specific parsing logic here
-        pass
+        print(self.text)
 
     def calculate_total_price(self):
         # Implement OtherVendor-specific logic here
@@ -139,18 +153,21 @@ class OtherVendorTicketParser(AbstractTicketParser):
 
 # factory function
 def get_ticket_parser(vendor, file_path):
+    if not os.path.isfile(file_path):
+        raise FileNotFoundError(f"No such file: {file_path}")
+
     if vendor == "Mercadona":
         return MercadonaTicketParser(file_path)
-    elif vendor == "OtherVendor":
-        return OtherVendorTicketParser(file_path)
+    elif vendor == "Granel":
+        return GranelTicketParser(file_path)
     else:
         raise ValueError(f"Unsupported vendor: {vendor}")
 
 
 if __name__ == "__main__":
-    file_path = "../downloads/20240105 Mercadona 12,50 €.pdf"
-    pdf_parser = get_ticket_parser("Mercadona", file_path)
+    # Ejemplo tienda Granel
+    # file_path = "../downloads/20240105 Mercadona 12,50 €.pdf"
+    file_path = "P:/tickets/20240113_fruteria.pdf"
+    print(file_path)
+    pdf_parser = get_ticket_parser("Granel", file_path)
     items, total_price = pdf_parser.parse()
-    print(items)
-    print(f"Total price: {total_price:.2f} €")
-    print("Done!")
