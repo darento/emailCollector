@@ -35,7 +35,7 @@ class GranelTicketParser(AbstractTicketParser):
             img_prepared, lang="cat+eng+spa", config="--psm 4 --oem 1"
         )
         cleaned_text = self._clean_ocr_text(text)
-        print(cleaned_text)
+        self.logger.debug(cleaned_text)
         return cleaned_text
 
     def _deskew_image(self, image, delta=0.2, limit=1):
