@@ -30,7 +30,7 @@ class GranelTicketParser(AbstractTicketParser):
         self.logger.debug(cleaned_text)
         return cleaned_text
 
-    def parse_line(self, lines_iter):
+    def parse_line(self, lines_iter: iter) -> dict:
         for line in lines_iter:
             product = " ".join(line.strip().split(" ")[1:])
             next_line = next(lines_iter)
@@ -46,7 +46,7 @@ class GranelTicketParser(AbstractTicketParser):
             }
             yield item
 
-    def extract_items(self):
+    def extract_items(self) -> list[dict]:
         # Find the start and end of the items
         start = self.text.find("ART")
         end = self.text.find("TOTAL")

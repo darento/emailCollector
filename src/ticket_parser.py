@@ -26,7 +26,7 @@ class AbstractTicketParser(ABC):
     def get_text(self) -> str:
         return self.text
 
-    def calculate_total_price(self):
+    def calculate_total_price(self) -> float:
         self.total_price = sum(item["total_price"] for item in self.items)
         if self.total_price == 0:
             self.logger.warning("Total price is 0. Check the parser!")

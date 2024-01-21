@@ -11,19 +11,19 @@ class EmailCollector:
         self.imap_url = imap_url
         self.mail = None
 
-    def connect(self):
+    def connect(self) -> None:
         """Connect to the email server."""
         self.mail = imaplib.IMAP4_SSL(self.imap_url)
         self.mail.login(self.username, self.password)
 
-    def fetch_emails(self, sender: str):
+    def fetch_emails(self, sender: str) -> list:
         """Search for emails based on the given criteria."""
         self.mail.select("inbox")
         result, data = self.mail.uid("search", None, f"(FROM {sender})")
         email_ids = data[0].split()
         return email_ids
 
-    def download_attachments(self, email_id: str, download_folder: str):
+    def download_attachments(self, email_id: str, download_folder: str) -> str:
         """Download PDF attachments from the specified emails."""
         result, email_data = self.mail.uid("fetch", email_id, "(BODY.PEEK[])")
         raw_email = email_data[0][1].decode("utf-8")

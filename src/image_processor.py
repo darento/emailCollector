@@ -7,7 +7,9 @@ class ImageProcessor:
     def __init__(self, img_path: str) -> None:
         self.img = cv2.imread(img_path)
 
-    def enhance_image(self, high_contrast=True, gaussian_blur=True, show=False):
+    def enhance_image(
+        self, high_contrast: bool = True, gaussian_blur: bool = True, show: bool = False
+    ) -> np.ndarray:
         self.img = self.rescale_image()
 
         self.img = self.deskew_image()
@@ -24,7 +26,7 @@ class ImageProcessor:
 
         return self.img
 
-    def deskew_image(self, delta=0.2, limit=1):
+    def deskew_image(self, delta: float = 0.2, limit: float = 1) -> np.ndarray:
         def determine_score(arr, angle):
             data = rotate(arr, angle, reshape=False, order=0)
             histogram = np.sum(data, axis=1)
@@ -52,7 +54,7 @@ class ImageProcessor:
 
         return rotated
 
-    def remove_shadows(self):
+    def remove_shadows(self) -> np.ndarray:
         rgb_planes = cv2.split(self.img)
 
         result_planes = []
@@ -76,17 +78,17 @@ class ImageProcessor:
 
         return result
 
-    def rescale_image(self):
+    def rescale_image(self) -> np.ndarray:
         self.img = cv2.resize(
             self.img, None, fx=1.2, fy=1.2, interpolation=cv2.INTER_CUBIC
         )
         return self.img
 
-    def grayscale_image(self):
+    def grayscale_image(self) -> np.ndarray:
         self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         return self.img
 
-    def remove_noise(self):
+    def remove_noise(self) -> np.ndarray:
         kernel = np.ones((1, 1), np.uint8)
         self.img = cv2.dilate(self.img, kernel, iterations=1)
         self.img = cv2.erode(self.img, kernel, iterations=1)
@@ -114,7 +116,7 @@ class ImageProcessor:
 
         return self.img
 
-    def show_image(self):
+    def show_image(self) -> None:
         # Display the thresholded image
         # Create a resizable window
         cv2.namedWindow("Thresholded Image", cv2.WINDOW_NORMAL)
