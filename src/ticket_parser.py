@@ -1,27 +1,11 @@
-import logging
-
 from abc import ABC, abstractmethod
+
+from src.logger import get_logger
 
 
 class AbstractTicketParser(ABC):
     # Create a logger at the class level
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.WARNING)
-
-    # Check if the logger has handlers
-    if not logger.handlers:
-        # Create a console handler with level DEBUG
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.WARNING)
-
-        # Create a formatter and add it to the handler
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        handler.setFormatter(formatter)
-
-        # Add the handler to the logger
-        logger.addHandler(handler)
+    logger = get_logger(__name__)
 
     def __init__(self, file_path: str) -> None:
         self.file_path = file_path
@@ -30,26 +14,30 @@ class AbstractTicketParser(ABC):
         self.total_price = 0
         self.file_date = self._parse_date_from_file_path()
 
+    def _parse_date_from_file_path(self) -> str:
+        # Extract the date from the file name
+        # The date is the first 8 characters of the file name
+        # The format is YYYYMMDD
+        return self.file_path.split("/")[-1][:8]
+
     def get_date(self) -> str:
         return self.file_date
 
     def get_text(self) -> str:
         return self.text
 
+    def calculate_total_price(self):
+        self.total_price = sum(item["total_price"] for item in self.items)
+        if self.total_price == 0:
+            self.logger.warning("Total price is 0. Check the parser!")
+        return self.total_price
+
     @abstractmethod
     def _parse_ticket(self) -> None:
         pass
 
     @abstractmethod
-    def _parse_date_from_file_path(self) -> str:
-        pass
-
-    @abstractmethod
     def extract_items(self) -> None:
-        pass
-
-    @abstractmethod
-    def calculate_total_price(self) -> None:
         pass
 
 

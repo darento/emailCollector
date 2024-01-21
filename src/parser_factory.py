@@ -1,5 +1,5 @@
-from src.mercadona_parser import MercadonaTicketParser
-from src.granel_parser import GranelTicketParser
+from src.vendors.mercadona_parser import MercadonaTicketParser
+from src.vendors.granel_parser import GranelTicketParser
 
 
 def get_ticket_parser(vendor, file_path):
