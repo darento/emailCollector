@@ -4,10 +4,10 @@ from src.logger import get_logger
 
 
 class AbstractTicketParser(ABC):
-    # Create a logger at the class level
-    logger = get_logger(__name__)
+    def __init__(self, file_path: str, logger_name: str) -> None:
+        # Create a logger at the class level
+        self.logger = get_logger(logger_name, "DEBUG")
 
-    def __init__(self, file_path: str) -> None:
         self.file_path = file_path
         self.items = []
         self.text = self._parse_ticket()

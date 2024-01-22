@@ -8,6 +8,9 @@ WEIGHT_PATTERN_MERCA = re.compile(r"(\d+,\d{3}) kg (\d+,\d{2}) €/kg (\d+,\d{2}
 
 
 class MercadonaTicketParser(AbstractTicketParser):
+    def __init__(self, file_path: str, logger_name: str = "MercadonaTicketParser"):
+        super().__init__(file_path, logger_name)
+
     def _parse_ticket(self) -> None:
         # Extract the text from the PDF
         pdf_file_obj = open(self.file_path, "rb")

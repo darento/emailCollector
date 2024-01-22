@@ -7,6 +7,9 @@ from src.image_processor import ImageProcessor
 
 
 class GranelTicketParser(AbstractTicketParser):
+    def __init__(self, file_path: str, logger_name: str = "GranelTicketParser"):
+        super().__init__(file_path, logger_name)
+
     def _clean_ocr_text(self, text: str) -> str:
         # Remove unwanted characters
         text = re.sub(r"[|]", "", text)
