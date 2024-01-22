@@ -1,0 +1,5 @@
+username: youremail@gmail.com
+password: yourpassword
+imap_url: imap.gmail.com
+download_folder: download_folder/
+email_sender: sender@email
