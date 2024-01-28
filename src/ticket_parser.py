@@ -6,7 +6,7 @@ from src.logger import get_logger
 class AbstractTicketParser(ABC):
     def __init__(self, file_path: str, logger_name: str) -> None:
         # Create a logger at the class level
-        self.logger = get_logger(logger_name, "DEBUG")
+        self.logger = get_logger(logger_name)
 
         self.file_path = file_path
         self.items = []
