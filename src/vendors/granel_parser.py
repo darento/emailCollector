@@ -22,10 +22,16 @@ class GranelTicketParser(AbstractTicketParser):
 
         return text
 
+    def _clean_product_name(self, product: str) -> str:
+        # if only TIPO 1 in name instead of ESPECIAS TIPO 1, add ESPECIAS to name
+        if product.startswith("TIPO"):
+            product = "ESPECIAS " + product
+        return product
+
     def _parse_ticket(self) -> None:
         # Extract the text from the JPEG
         img_processor = ImageProcessor(img_path=self.file_path)
-        img_prepared = img_processor.enhance_image(show=True)
+        img_prepared = img_processor.enhance_image(show=False)
         text = pytesseract.image_to_string(
             img_prepared, lang="cat+eng+spa", config="--psm 4 --oem 1"
         )
@@ -36,6 +42,7 @@ class GranelTicketParser(AbstractTicketParser):
     def parse_line(self, lines_iter: iter) -> dict:
         for line in lines_iter:
             product = " ".join(line.strip().split(" ")[1:])
+            # product = self._clean_product_name(product)
             next_line = next(lines_iter)
             next_line_split = next_line.strip().split(" ")
             weight_kg = convert_to_float(next_line_split[0])
