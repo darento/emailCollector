@@ -15,3 +15,5 @@ dist/
 my_tickets/
 downloads/
 test.app
+config/my_config.yaml
+```
