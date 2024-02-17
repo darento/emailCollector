@@ -25,9 +25,18 @@ def plot_expenses_per_month(expenses_per_month: dict, title_vendor: str = None) 
     set_plot_params(f"Expenses per Month {title_vendor}", "Month", "Expenses (€)")
 
 
-def plot_expenses_per_item(expenses_per_item: dict, title_vendor: str = None) -> None:
-    # Sort the dictionary by item
-    expenses_per_item = dict(sorted(expenses_per_item.items()))
+def plot_expenses_per_item(
+    expenses_per_item: dict, title_vendor: str = None, top_n: int = 30
+) -> None:
+    if len(expenses_per_item) < top_n:
+        top_n = len(expenses_per_item)
+
+    # Sort the dictionary by expense and select the top N items
+    expenses_per_item = dict(
+        sorted(expenses_per_item.items(), key=lambda item: item[1], reverse=True)[
+            :top_n
+        ]
+    )
 
     # Create the plot
     plt.figure(figsize=(10, 6))
@@ -41,7 +50,9 @@ def plot_expenses_per_item(expenses_per_item: dict, title_vendor: str = None) ->
         range(len(expenses_per_item)),
         list(expenses_per_item.keys()),
     )
-    set_plot_params(f"Expenses per Month {title_vendor}", "Expenses (€)", "Item")
+    set_plot_params(
+        f"Top {top_n} Expenses per Item {title_vendor}", "Expenses (€)", "Item"
+    )
 
 
 def plot_show():
