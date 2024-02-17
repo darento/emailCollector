@@ -1,4 +1,5 @@
 import re
+from typing import Generator
 import pytesseract
 
 from src.utils import convert_to_float
@@ -39,7 +40,7 @@ class GranelTicketParser(AbstractTicketParser):
         self.logger.debug(cleaned_text)
         return cleaned_text
 
-    def parse_line(self, lines_iter: iter) -> dict:
+    def parse_line(self, lines_iter: iter) -> Generator[dict, None, None]:
         for line in lines_iter:
             product = " ".join(line.strip().split(" ")[1:])
             # product = self._clean_product_name(product)
