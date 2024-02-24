@@ -8,11 +8,15 @@ class ImageProcessor:
         self.img = cv2.imread(img_path)
 
     def enhance_image(
-        self, high_contrast: bool = True, gaussian_blur: bool = True, show: bool = False
+        self,
+        deskew_limit,
+        high_contrast: bool = True,
+        gaussian_blur: bool = True,
+        show: bool = False,
     ) -> np.ndarray:
         self.img = self.rescale_image()
 
-        self.img = self.deskew_image()
+        self.img = self.deskew_image(limit=deskew_limit)
         self.img = self.remove_shadows()
 
         if high_contrast:

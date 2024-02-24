@@ -10,6 +10,7 @@ Options:
   -h --help     Show this screen.
 """
 
+from collections import defaultdict
 import os
 import yaml
 from docopt import docopt
@@ -58,10 +59,17 @@ def extract_items_from_tickets(tickets_dir: str, vendor: str) -> list:
     return all_items
 
 
+def extract_total_per_month(dicts):
+    result = defaultdict(float)
+    for d in dicts:
+        for key, value in d.items():
+            result[key] += value
+    return result
+
+
 def main(yaml_conf: str) -> None:
     with open(yaml_conf, "r") as stream:
         config = yaml.safe_load(stream)
-
     with open(config["password"], "r") as f:
         password = f.read()
 
@@ -78,11 +86,11 @@ def main(yaml_conf: str) -> None:
     )
 
     # Dictionary to store the total expenses per month
-    expenses_per_month = extract_expenses_per_month(all_items_mercadona)
+    expenses_per_month_mercadona = extract_expenses_per_month(all_items_mercadona)
     expenses_per_item = extract_expenses_per_item(all_items_mercadona)
 
     # Plot the expenses per month and per item
-    plot_expenses_per_month(expenses_per_month, title_vendor="Mercadona")
+    plot_expenses_per_month(expenses_per_month_mercadona, title_vendor="Mercadona")
     plot_expenses_per_item(expenses_per_item, title_vendor="Mercadona")
     plot_show()
 
@@ -90,19 +98,39 @@ def main(yaml_conf: str) -> None:
     # Directory containing the tickets
     tickets_dir = config["tickets_dir"]
 
-    # Get a list of all files in the directory
-    all_files = os.listdir(tickets_dir)
-
-    # List to store all the items
+    # List to store all the items for Granel vendor
     all_items_granel = extract_items_from_tickets(tickets_dir, "Granel")
 
     # Dictionary to store the total expenses per month and per item
-    expenses_per_month = extract_expenses_per_month(all_items_granel)
+    expenses_per_month_granel = extract_expenses_per_month(all_items_granel)
     expenses_per_item = extract_expenses_per_item(all_items_granel)
 
     # Plot the expenses per month and per item
-    plot_expenses_per_month(expenses_per_month, title_vendor="Granel")
+    plot_expenses_per_month(expenses_per_month_granel, title_vendor="Granel")
     plot_expenses_per_item(expenses_per_item, title_vendor="Granel")
+    plot_show()
+
+    # List to store all the items for Fruteria vendor
+    all_items_fruteria = extract_items_from_tickets(tickets_dir, "Fruteria")
+
+    # Dictionary to store the total expenses per month and per item
+    expenses_per_month_fruteria = extract_expenses_per_month(all_items_fruteria)
+    expenses_per_item = extract_expenses_per_item(all_items_fruteria)
+
+    # Plot the expenses per month and per item
+    plot_expenses_per_month(expenses_per_month_fruteria, title_vendor="Fruteria")
+    plot_expenses_per_item(expenses_per_item, title_vendor="Fruteria")
+    plot_show()
+
+    # Plot the expenses per month and per item for all vendors
+    total_expenses_per_month = extract_total_per_month(
+        [
+            expenses_per_month_mercadona,
+            expenses_per_month_granel,
+            expenses_per_month_fruteria,
+        ]
+    )
+    plot_expenses_per_month(total_expenses_per_month, title_vendor="All Vendors")
     plot_show()
 
 

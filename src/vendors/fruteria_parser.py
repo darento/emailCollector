@@ -41,9 +41,7 @@ class FruteriaTicketParser(AbstractTicketParser):
     def _parse_ticket(self) -> None:
         # Extract the text from the JPEG
         img_processor = ImageProcessor(img_path=self.file_path)
-        img_prepared = img_processor.enhance_image(
-            show=True, high_contrast=True, gaussian_blur=True
-        )
+        img_prepared = img_processor.enhance_image(deskew_limit=3, show=False)
         text = pytesseract.image_to_string(
             img_prepared, lang="cat+eng+spa", config="--psm 4 --oem 1"
         )
