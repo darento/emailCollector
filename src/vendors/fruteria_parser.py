@@ -24,8 +24,19 @@ class FruteriaTicketParser(AbstractTicketParser):
         return text
 
     def _clean_product_name(self, product: str) -> str:
-
+        product = " ".join(product.strip().split(" "))
         return product
+
+    def _parse_product_info(self, line: str) -> tuple:
+        next_line_split = line.strip().split(" ")
+        if len(next_line_split) > 4:
+            weight_kg = convert_to_float(next_line_split[2])
+            price_per_kg = convert_to_float(next_line_split[4])
+        else:
+            weight_kg = convert_to_float(next_line_split[1])
+            price_per_kg = convert_to_float(next_line_split[2])
+        total_price = convert_to_float(next_line_split[-1])
+        return weight_kg, price_per_kg, total_price
 
     def _parse_ticket(self) -> None:
         # Extract the text from the JPEG
@@ -34,7 +45,7 @@ class FruteriaTicketParser(AbstractTicketParser):
             show=True, high_contrast=True, gaussian_blur=True
         )
         text = pytesseract.image_to_string(
-            img_prepared, lang="spa", config="--psm 4 --oem 1"
+            img_prepared, lang="cat+eng+spa", config="--psm 4 --oem 1"
         )
         cleaned_text = self._clean_ocr_text(text)
         self.logger.debug(cleaned_text)
@@ -42,14 +53,12 @@ class FruteriaTicketParser(AbstractTicketParser):
 
     def parse_line(self, lines_iter: iter) -> Generator[dict, None, None]:
         for line in lines_iter:
-            product = " ".join(line.strip().split(" ")[1:])
-            print(product)
-            # product = self._clean_product_name(product)
-            next_line = next(lines_iter)
-            next_line_split = next_line.strip().split(" ")
-            weight_kg = convert_to_float(next_line_split[0])
-            price_per_kg = convert_to_float(next_line_split[1])
-            total_price = convert_to_float(next_line_split[2])
+            product = line
+            product = self._clean_product_name(product)
+            product_info = next(lines_iter)
+            weight_kg, price_per_kg, total_price = self._parse_product_info(
+                product_info
+            )
             item = {
                 "product": product,
                 "weight_kg": weight_kg,
@@ -66,8 +75,7 @@ class FruteriaTicketParser(AbstractTicketParser):
 
         # remove first and last line (Descripción and empty line)
         lines = items_text.split("\n")[1:-1]
-        print(lines)
-        exit(0)
+
         self.logger.debug(f"TEXT: \n{self.text}")
         self.logger.debug(f"LINES: \n{lines}")
 
