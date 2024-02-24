@@ -26,7 +26,7 @@ class ImageProcessor:
 
         return self.img
 
-    def deskew_image(self, delta: float = 0.2, limit: float = 1) -> np.ndarray:
+    def deskew_image(self, delta: float = 0.2, limit: float = 3) -> np.ndarray:
         def determine_score(arr, angle):
             data = rotate(arr, angle, reshape=False, order=0)
             histogram = np.sum(data, axis=1)
